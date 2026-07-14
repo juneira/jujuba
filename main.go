@@ -1,7 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"github.com/juneira/jujuba/openai"
+)
 
 func main() {
-	fmt.Println("Hello")
+	openai.Call()
 }
