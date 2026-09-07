@@ -37,15 +37,15 @@ const (
 
 // ModelResponseProperties corresponds to the `ModelResponseProperties` schema.
 type ModelResponseProperties struct {
-	Metadata             *Metadata  `json:"metadata,omitempty"`
-	TopLogprobs          *int       `json:"top_logprobs,omitempty"`
-	Temperature          *float64   `json:"temperature,omitempty"`
-	TopP                 *float64   `json:"top_p,omitempty"`
-	User                 *string    `json:"user,omitempty"`
-	SafetyIdentifier     *string    `json:"safety_identifier,omitempty"`
-	PromptCacheKey       *string    `json:"prompt_cache_key,omitempty"`
-	ServiceTier          *string    `json:"service_tier,omitempty"` // ServiceTier
-	PromptCacheRetention *string    `json:"prompt_cache_retention,omitempty"` // "in_memory" | "24h"
+	Metadata             *Metadata `json:"metadata,omitempty"`
+	TopLogprobs          *int      `json:"top_logprobs,omitempty"`
+	Temperature          *float64  `json:"temperature,omitempty"`
+	TopP                 *float64  `json:"top_p,omitempty"`
+	User                 *string   `json:"user,omitempty"`
+	SafetyIdentifier     *string   `json:"safety_identifier,omitempty"`
+	PromptCacheKey       *string   `json:"prompt_cache_key,omitempty"`
+	ServiceTier          *string   `json:"service_tier,omitempty"`           // ServiceTier
+	PromptCacheRetention *string   `json:"prompt_cache_retention,omitempty"` // "in_memory" | "24h"
 }
 
 // CreateModelResponseProperties corresponds to the
@@ -204,16 +204,16 @@ type PredictionContent struct {
 // CustomToolChatCompletions corresponds to the `CustomToolChatCompletions`
 // schema.
 type CustomToolChatCompletions struct {
-	Type   string                            `json:"type"` // always "custom"
-	Custom CustomToolChatCompletionsCustom   `json:"custom"`
+	Type   string                          `json:"type"` // always "custom"
+	Custom CustomToolChatCompletionsCustom `json:"custom"`
 }
 
 // CustomToolChatCompletionsCustom is the inner `custom` object of
 // `CustomToolChatCompletions`.
 type CustomToolChatCompletionsCustom struct {
-	Name        string             `json:"name"`
-	Description *string            `json:"description,omitempty"`
-	Format      *CustomToolFormat  `json:"format,omitempty"`
+	Name        string            `json:"name"`
+	Description *string           `json:"description,omitempty"`
+	Format      *CustomToolFormat `json:"format,omitempty"`
 }
 
 // CustomToolFormatText corresponds to the "Text format" branch of the inline
@@ -225,7 +225,7 @@ type CustomToolFormatText struct {
 // CustomToolFormatGrammar corresponds to the "Grammar format" branch of the
 // inline `format` oneOf of `CustomToolChatCompletionsCustom`.
 type CustomToolFormatGrammar struct {
-	Type    string                        `json:"type"` // always "grammar"
+	Type    string                       `json:"type"` // always "grammar"
 	Grammar CustomToolFormatGrammarInner `json:"grammar"`
 }
 
@@ -251,8 +251,8 @@ type CustomToolFormat struct {
 // ChatCompletionAllowedTools corresponds to the `ChatCompletionAllowedTools`
 // schema.
 type ChatCompletionAllowedTools struct {
-	Mode  string              `json:"mode"`  // "auto" | "required"
-	Tools []map[string]any    `json:"tools"` // free-form tool definitions
+	Mode  string           `json:"mode"`  // "auto" | "required"
+	Tools []map[string]any `json:"tools"` // free-form tool definitions
 }
 
 // ChatCompletionAllowedToolsChoice corresponds to the
@@ -265,7 +265,7 @@ type ChatCompletionAllowedToolsChoice struct {
 // ChatCompletionNamedToolChoice corresponds to the
 // `ChatCompletionNamedToolChoice` schema.
 type ChatCompletionNamedToolChoice struct {
-	Type     string                                 `json:"type"` // always "function"
+	Type     string                                `json:"type"` // always "function"
 	Function ChatCompletionNamedToolChoiceFunction `json:"function"`
 }
 
@@ -278,7 +278,7 @@ type ChatCompletionNamedToolChoiceFunction struct {
 // ChatCompletionNamedToolChoiceCustom corresponds to the
 // `ChatCompletionNamedToolChoiceCustom` schema.
 type ChatCompletionNamedToolChoiceCustom struct {
-	Type   string                                    `json:"type"` // always "custom"
+	Type   string                                   `json:"type"` // always "custom"
 	Custom ChatCompletionNamedToolChoiceCustomInner `json:"custom"`
 }
 
@@ -308,10 +308,10 @@ type ChatCompletionTool struct {
 
 // FunctionObject corresponds to the `FunctionObject` schema.
 type FunctionObject struct {
-	Description *string            `json:"description,omitempty"`
-	Name        string             `json:"name"`
+	Description *string             `json:"description,omitempty"`
+	Name        string              `json:"name"`
 	Parameters  *FunctionParameters `json:"parameters,omitempty"`
-	Strict      *bool              `json:"strict,omitempty"`
+	Strict      *bool               `json:"strict,omitempty"`
 }
 
 // FunctionParameters corresponds to the `FunctionParameters` schema: a free-form
@@ -327,8 +327,8 @@ type ChatCompletionFunctionCallOption struct {
 // ChatCompletionFunctions corresponds to the `ChatCompletionFunctions` schema
 // (deprecated).
 type ChatCompletionFunctions struct {
-	Description *string            `json:"description,omitempty"`
-	Name        string             `json:"name"`
+	Description *string             `json:"description,omitempty"`
+	Name        string              `json:"name"`
 	Parameters  *FunctionParameters `json:"parameters,omitempty"`
 }
 
@@ -339,8 +339,8 @@ type ChatCompletionFunctions struct {
 // ChatCompletionMessageToolCall corresponds to the
 // `ChatCompletionMessageToolCall` schema (function tool call).
 type ChatCompletionMessageToolCall struct {
-	ID       string                                 `json:"id"`
-	Type     string                                 `json:"type"` // always "function"
+	ID       string                                `json:"id"`
+	Type     string                                `json:"type"` // always "function"
 	Function ChatCompletionMessageToolCallFunction `json:"function"`
 }
 
@@ -354,8 +354,8 @@ type ChatCompletionMessageToolCallFunction struct {
 // ChatCompletionMessageCustomToolCall corresponds to the
 // `ChatCompletionMessageCustomToolCall` schema (custom tool call).
 type ChatCompletionMessageCustomToolCall struct {
-	ID     string                                     `json:"id"`
-	Type   string                                     `json:"type"` // always "custom"
+	ID     string                                   `json:"id"`
+	Type   string                                   `json:"type"` // always "custom"
 	Custom ChatCompletionMessageCustomToolCallInner `json:"custom"`
 }
 
@@ -382,9 +382,9 @@ type ChatCompletionMessageToolCalls []ChatCompletionMessageToolCallItem
 // ChatCompletionMessageToolCallChunk corresponds to the
 // `ChatCompletionMessageToolCallChunk` schema (streamed tool call delta).
 type ChatCompletionMessageToolCallChunk struct {
-	Index    int                                          `json:"index"`
-	ID       string                                       `json:"id,omitempty"`
-	Type     string                                       `json:"type,omitempty"` // always "function"
+	Index    int                                         `json:"index"`
+	ID       string                                      `json:"id,omitempty"`
+	Type     string                                      `json:"type,omitempty"` // always "function"
 	Function *ChatCompletionMessageToolCallChunkFunction `json:"function,omitempty"`
 }
 
@@ -487,12 +487,12 @@ type ChatCompletionRequestUserMessage struct {
 // ChatCompletionRequestAssistantMessage corresponds to the
 // `ChatCompletionRequestAssistantMessage` schema (text only).
 type ChatCompletionRequestAssistantMessage struct {
-	Content      ChatCompletionRequestAssistantMessageContent           `json:"content,omitempty"`
-	Refusal      *string                                               `json:"refusal,omitempty"`
-	Role         string                                               `json:"role"` // always "assistant"
-	Name         *string                                               `json:"name,omitempty"`
-	ToolCalls    *ChatCompletionMessageToolCalls                       `json:"tool_calls,omitempty"`
-	FunctionCall *ChatCompletionRequestAssistantMessageFunctionCall    `json:"function_call,omitempty"`
+	Content      ChatCompletionRequestAssistantMessageContent       `json:"content,omitempty"`
+	Refusal      *string                                            `json:"refusal,omitempty"`
+	Role         string                                             `json:"role"` // always "assistant"
+	Name         *string                                            `json:"name,omitempty"`
+	ToolCalls    *ChatCompletionMessageToolCalls                    `json:"tool_calls,omitempty"`
+	FunctionCall *ChatCompletionRequestAssistantMessageFunctionCall `json:"function_call,omitempty"`
 }
 
 // ChatCompletionRequestToolMessage corresponds to the
@@ -517,13 +517,13 @@ type ChatCompletionRequestFunctionMessage struct {
 // type-safe construction; this struct is provided for general use and
 // JSON (un)marshalling.
 type ChatCompletionRequestMessage struct {
-	Role         string                                                `json:"role"`
-	Content      ChatCompletionRequestMessageContent                   `json:"content,omitempty"`
-	Name         *string                                               `json:"name,omitempty"`
-	Refusal      *string                                               `json:"refusal,omitempty"`
-	ToolCalls    *ChatCompletionMessageToolCalls                       `json:"tool_calls,omitempty"`
-	FunctionCall *ChatCompletionRequestAssistantMessageFunctionCall    `json:"function_call,omitempty"`
-	ToolCallID   *string                                               `json:"tool_call_id,omitempty"`
+	Role         string                                             `json:"role"`
+	Content      ChatCompletionRequestMessageContent                `json:"content,omitempty"`
+	Name         *string                                            `json:"name,omitempty"`
+	Refusal      *string                                            `json:"refusal,omitempty"`
+	ToolCalls    *ChatCompletionMessageToolCalls                    `json:"tool_calls,omitempty"`
+	FunctionCall *ChatCompletionRequestAssistantMessageFunctionCall `json:"function_call,omitempty"`
+	ToolCallID   *string                                            `json:"tool_call_id,omitempty"`
 }
 
 // =============================================================================
@@ -583,9 +583,9 @@ type CreateChatCompletionRequest struct {
 
 // CompletionUsage corresponds to the `CompletionUsage` schema.
 type CompletionUsage struct {
-	CompletionTokens        int                                   `json:"completion_tokens"`
-	PromptTokens            int                                   `json:"prompt_tokens"`
-	TotalTokens             int                                   `json:"total_tokens"`
+	CompletionTokens        int                                     `json:"completion_tokens"`
+	PromptTokens            int                                     `json:"prompt_tokens"`
+	TotalTokens             int                                     `json:"total_tokens"`
 	CompletionTokensDetails *CompletionUsageCompletionTokensDetails `json:"completion_tokens_details,omitempty"`
 	PromptTokensDetails     *CompletionUsagePromptTokensDetails     `json:"prompt_tokens_details,omitempty"`
 }
@@ -609,10 +609,10 @@ type CompletionUsagePromptTokensDetails struct {
 // ChatCompletionTokenLogprob corresponds to the
 // `ChatCompletionTokenLogprob` schema.
 type ChatCompletionTokenLogprob struct {
-	Token       string                                   `json:"token"`
-	Logprob     float64                                  `json:"logprob"`
-	Bytes       []int                                    `json:"bytes"`
-	TopLogprobs []ChatCompletionTokenLogprobTopLogprob   `json:"top_logprobs"`
+	Token       string                                 `json:"token"`
+	Logprob     float64                                `json:"logprob"`
+	Bytes       []int                                  `json:"bytes"`
+	TopLogprobs []ChatCompletionTokenLogprobTopLogprob `json:"top_logprobs"`
 }
 
 // ChatCompletionTokenLogprobTopLogprob is an item in
@@ -633,7 +633,7 @@ type ChatCompletionChoiceLogprobs struct {
 // ChatCompletionResponseMessageAnnotation is the inline `annotations[]` item
 // on `ChatCompletionResponseMessage` (a URL citation from web search).
 type ChatCompletionResponseMessageAnnotation struct {
-	Type        string                                                   `json:"type"` // always "url_citation"
+	Type        string                                             `json:"type"` // always "url_citation"
 	URLCitation ChatCompletionResponseMessageAnnotationURLCitation `json:"url_citation"`
 }
 
@@ -656,12 +656,12 @@ type ChatCompletionResponseMessageFunctionCall struct {
 // ChatCompletionResponseMessage corresponds to the
 // `ChatCompletionResponseMessage` schema (text only).
 type ChatCompletionResponseMessage struct {
-	Content      *string                                     `json:"content"`
-	Refusal      *string                                     `json:"refusal"`
-	ToolCalls    *ChatCompletionMessageToolCalls             `json:"tool_calls,omitempty"`
-	Annotations  []ChatCompletionResponseMessageAnnotation   `json:"annotations,omitempty"`
-	Role         string                                      `json:"role"` // always "assistant"
-	FunctionCall *ChatCompletionResponseMessageFunctionCall  `json:"function_call,omitempty"`
+	Content      *string                                    `json:"content"`
+	Refusal      *string                                    `json:"refusal"`
+	ToolCalls    *ChatCompletionMessageToolCalls            `json:"tool_calls,omitempty"`
+	Annotations  []ChatCompletionResponseMessageAnnotation  `json:"annotations,omitempty"`
+	Role         string                                     `json:"role"` // always "assistant"
+	FunctionCall *ChatCompletionResponseMessageFunctionCall `json:"function_call,omitempty"`
 }
 
 // ChatCompletionChoice corresponds to the inline `choices[]` item on
@@ -697,9 +697,9 @@ type CreateChatCompletionResponse struct {
 // ChatCompletionStreamResponseDelta corresponds to the
 // `ChatCompletionStreamResponseDelta` schema (text only).
 type ChatCompletionStreamResponseDelta struct {
-	Content      *string                                     `json:"content,omitempty"`
-	FunctionCall *ChatCompletionResponseMessageFunctionCall  `json:"function_call,omitempty"`
-	ToolCalls    []ChatCompletionMessageToolCallChunk        `json:"tool_calls,omitempty"`
+	Content      *string                                    `json:"content,omitempty"`
+	FunctionCall *ChatCompletionResponseMessageFunctionCall `json:"function_call,omitempty"`
+	ToolCalls    []ChatCompletionMessageToolCallChunk       `json:"tool_calls,omitempty"`
 	Role         *ChatCompletionRole                        `json:"role,omitempty"`
 	Refusal      *string                                    `json:"refusal,omitempty"`
 }
@@ -748,11 +748,11 @@ type ChatCompletionDeleted struct {
 // ChatCompletionList corresponds to the `ChatCompletionList` schema
 // (returned by GET /chat/completions).
 type ChatCompletionList struct {
-	Object  string                        `json:"object"` // always "list"
+	Object  string                         `json:"object"` // always "list"
 	Data    []CreateChatCompletionResponse `json:"data"`
-	FirstID string                        `json:"first_id"`
-	LastID  string                        `json:"last_id"`
-	HasMore bool                          `json:"has_more"`
+	FirstID string                         `json:"first_id"`
+	LastID  string                         `json:"last_id"`
+	HasMore bool                           `json:"has_more"`
 }
 
 // ChatCompletionMessageListItem corresponds to an item in
@@ -760,16 +760,16 @@ type ChatCompletionList struct {
 // with an extra `id` and optional `content_parts`).
 type ChatCompletionMessageListItem struct {
 	ChatCompletionResponseMessage
-	ID           string                                              `json:"id"`
-	ContentParts *[]ChatCompletionRequestMessageContentPartText      `json:"content_parts,omitempty"` // text parts; image_url parts not modeled in this text-only subset
+	ID           string                                         `json:"id"`
+	ContentParts *[]ChatCompletionRequestMessageContentPartText `json:"content_parts,omitempty"` // text parts; image_url parts not modeled in this text-only subset
 }
 
 // ChatCompletionMessageList corresponds to the `ChatCompletionMessageList`
 // schema (returned by GET /chat/completions/{completion_id}/messages).
 type ChatCompletionMessageList struct {
-	Object  string                         `json:"object"` // always "list"
+	Object  string                          `json:"object"` // always "list"
 	Data    []ChatCompletionMessageListItem `json:"data"`
-	FirstID string                         `json:"first_id"`
-	LastID  string                         `json:"last_id"`
-	HasMore bool                           `json:"has_more"`
+	FirstID string                          `json:"first_id"`
+	LastID  string                          `json:"last_id"`
+	HasMore bool                            `json:"has_more"`
 }
