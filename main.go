@@ -7,9 +7,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/joho/godotenv"
 	"github.com/juneira/jujuba/chat"
 	"github.com/juneira/jujuba/openai"
-	"github.com/joho/godotenv"
 )
 
 const defaultModelID = "deepseek/deepseek-v4-flash-0731"

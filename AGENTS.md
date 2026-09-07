@@ -1,13 +1,12 @@
 # AGENTS.md
 
-Small terminal chat client for OpenAI-compatible Chat Completions APIs (module `github.com/juneira/jujuba`). No CI, no Makefile, no lint config — verification is `go vet ./... && go test ./...`.
+Small terminal chat client for OpenAI-compatible Chat Completions APIs (module `github.com/juneira/jujuba`). No CI, no lint config beyond `go vet` + `gofmt` — verification is `make lint && make test`.
 
 ## Commands
 
-- `go run .` — run the interactive CLI (stdin REPL)
-- `go test ./...` — all tests; stdlib `testing` only, single test via `go test ./openai -run TestAsk_SuccessResponse`
-- `go build ./...` and `go vet ./...` before finishing changes
-- `gofmt -l` currently flags `main.go` (import order); don't treat that as breakage
+- `make start` — run the interactive CLI (stdin REPL); `make build` produces the `jujuba` binary
+- `make test` / `make lint` / `make fix_lint` — vet + gofmt check / gofmt rewrite
+- Single test via `go test ./openai -run TestAsk_SuccessResponse`; stdlib `testing` only
 
 ## Required setup
 
