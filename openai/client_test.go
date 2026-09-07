@@ -2,8 +2,10 @@ package openai
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/juneira/jujuba/chat"
@@ -270,6 +272,130 @@ func TestUnmarshalJSON_ContentInvalid(t *testing.T) {
 	err := json.Unmarshal([]byte(`42`), &c)
 	if err == nil {
 		t.Fatal("expected error for number, got nil")
+	}
+}
+
+func TestAskStream_RequestStreamTrue(t *testing.T) {
+	var capturedReq CreateChatCompletionRequest
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&capturedReq); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		w.Header().Set("Content-Type", "text/event-stream")
+		fmt.Fprint(w, "data: [DONE]\n\n")
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "")
+	ch := chat.New(client, "test-model")
+	_, err := ch.AskStream("hello", func(string) {})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if capturedReq.Stream == nil || *capturedReq.Stream != true {
+		t.Errorf("expected stream=true, got %v", capturedReq.Stream)
+	}
+	if capturedReq.Model != "test-model" {
+		t.Errorf("expected model 'test-model', got '%s'", capturedReq.Model)
+	}
+}
+
+func TestAskStream_SSEAccumulation(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		fmt.Fprint(w, strings.Join([]string{
+			`: keep-alive`,
+			`data: {"id":"chatcmpl-1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"role":"assistant","content":"Hel"}}]}`,
+			``,
+			`data: {"id":"chatcmpl-1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"lo"}}]}`,
+			``,
+			`data: {"id":"chatcmpl-1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}`,
+			``,
+			`data: {"id":"chatcmpl-1","object":"chat.completion.chunk","choices":[],"usage":{"prompt_tokens":1,"completion_tokens":2,"total_tokens":3}}`,
+			``,
+			`data: [DONE]`,
+			``,
+		}, "\n"))
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "")
+	ch := chat.New(client, "test-model")
+
+	var deltas []string
+	resp, err := ch.AskStream("prompt", func(d string) { deltas = append(deltas, d) })
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if resp != "Hello" {
+		t.Errorf("expected 'Hello', got '%s'", resp)
+	}
+	if len(deltas) != 2 || deltas[0] != "Hel" || deltas[1] != "lo" {
+		t.Errorf("unexpected deltas: %v", deltas)
+	}
+
+	msgs := ch.Messages()
+	if len(msgs) != 2 {
+		t.Fatalf("expected 2 messages, got %d", len(msgs))
+	}
+	if msgs[1].Role != chat.RoleAssistant || msgs[1].Content != "Hello" {
+		t.Errorf("unexpected assistant message: %+v", msgs[1])
+	}
+}
+
+func TestAskStream_ServerError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("internal error"))
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "")
+	ch := chat.New(client, "test-model")
+	_, err := ch.AskStream("prompt", func(string) {})
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestAskStream_MalformedChunk(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		fmt.Fprint(w, "data: {invalid\n\ndata: [DONE]\n\n")
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "")
+	ch := chat.New(client, "test-model")
+	_, err := ch.AskStream("prompt", func(string) {})
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestRequestOmitsEmptyResponseFormatAndStop(t *testing.T) {
+	body, err := json.Marshal(CreateChatCompletionRequest{
+		Messages: []ChatCompletionRequestMessage{{Role: "user"}},
+		Model:    "test-model",
+	})
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+
+	var m map[string]any
+	if err := json.Unmarshal(body, &m); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if _, ok := m["response_format"]; ok {
+		t.Errorf("expected response_format to be omitted, got: %s", string(body))
+	}
+	if _, ok := m["stop"]; ok {
+		t.Errorf("expected stop to be omitted, got: %s", string(body))
 	}
 }
 

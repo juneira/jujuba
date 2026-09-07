@@ -559,10 +559,10 @@ type CreateChatCompletionRequest struct {
 	PresencePenalty     *float64                        `json:"presence_penalty,omitempty"`
 	WebSearchOptions    *WebSearchOptions               `json:"web_search_options,omitempty"`
 	TopLogprobs         *int                            `json:"top_logprobs,omitempty"`
-	ResponseFormat      ResponseFormat                  `json:"response_format,omitempty"`
+	ResponseFormat      *ResponseFormat                 `json:"response_format,omitempty"`
 	Store               *bool                           `json:"store,omitempty"`
 	Stream              *bool                           `json:"stream,omitempty"`
-	Stop                StopConfiguration               `json:"stop,omitempty"`
+	Stop                *StopConfiguration              `json:"stop,omitempty"`
 	LogitBias           map[string]int                  `json:"logit_bias,omitempty"`
 	Logprobs            *bool                           `json:"logprobs,omitempty"`
 	MaxTokens           *int                            `json:"max_tokens,omitempty"`

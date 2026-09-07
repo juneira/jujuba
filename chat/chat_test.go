@@ -6,11 +6,21 @@ import (
 )
 
 type mockProvider struct {
-	resp *MessageType
-	err  error
+	resp   *MessageType
+	err    error
+	deltas []string
 }
 
 func (m *mockProvider) Ask(chat *Chat) (*MessageType, error) {
+	return m.resp, m.err
+}
+
+func (m *mockProvider) AskStream(chat *Chat, onDelta func(string)) (*MessageType, error) {
+	for _, d := range m.deltas {
+		if onDelta != nil {
+			onDelta(d)
+		}
+	}
 	return m.resp, m.err
 }
 
@@ -117,5 +127,52 @@ func TestMessages(t *testing.T) {
 	msgs := c.Messages()
 	if len(msgs) != 2 {
 		t.Fatalf("expected 2 messages, got %d", len(msgs))
+	}
+}
+
+func TestAskStream_ForwardsDeltasAndAppendsHistory(t *testing.T) {
+	mp := &mockProvider{
+		resp:   &MessageType{Role: RoleAssistant, Content: "hello back"},
+		deltas: []string{"hello ", "back"},
+	}
+	c := New(mp, "test-model")
+
+	var got []string
+	resp, err := c.AskStream("hello", func(d string) { got = append(got, d) })
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if resp != "hello back" {
+		t.Errorf("expected 'hello back', got '%s'", resp)
+	}
+	if len(got) != 2 || got[0] != "hello " || got[1] != "back" {
+		t.Errorf("unexpected deltas: %v", got)
+	}
+
+	msgs := c.Messages()
+	if len(msgs) != 2 {
+		t.Fatalf("expected 2 messages, got %d", len(msgs))
+	}
+	if msgs[0].Role != RoleUser || msgs[0].Content != "hello" {
+		t.Errorf("unexpected user message: %+v", msgs[0])
+	}
+	if msgs[1].Role != RoleAssistant || msgs[1].Content != "hello back" {
+		t.Errorf("unexpected assistant message: %+v", msgs[1])
+	}
+}
+
+func TestAskStream_ProviderError(t *testing.T) {
+	mp := &mockProvider{
+		err: fmt.Errorf("provider failure"),
+	}
+	c := New(mp, "test-model")
+
+	_, err := c.AskStream("prompt", func(string) {})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if err.Error() != "provider failure" {
+		t.Errorf("expected 'provider failure', got '%s'", err.Error())
 	}
 }

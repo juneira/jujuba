@@ -5,6 +5,16 @@ import (
 	"fmt"
 )
 
+func (s StopConfiguration) MarshalJSON() ([]byte, error) {
+	if s.String != nil {
+		return json.Marshal(*s.String)
+	}
+	if s.Array != nil {
+		return json.Marshal(s.Array)
+	}
+	return []byte("null"), nil
+}
+
 func (c ChatCompletionRequestMessageContent) MarshalJSON() ([]byte, error) {
 	if c.Text != nil {
 		return json.Marshal(*c.Text)
