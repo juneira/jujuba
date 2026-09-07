@@ -3,16 +3,23 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
 	"github.com/juneira/jujuba/chat"
 	"github.com/juneira/jujuba/openai"
+	"github.com/joho/godotenv"
 )
 
 const defaultModelID = "deepseek/deepseek-v4-flash-0731"
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	baseURL := os.Getenv("OPENAI_BASE_URL")
 	if baseURL == "" {
 		baseURL = "http://localhost:1234"
