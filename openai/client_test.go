@@ -10,7 +10,7 @@ import (
 )
 
 func TestNewClient(t *testing.T) {
-	c := NewClient("http://localhost:1234")
+	c := NewClient("http://localhost:1234", "")
 	if c.baseURL != "http://localhost:1234" {
 		t.Errorf("expected baseURL 'http://localhost:1234', got '%s'", c.baseURL)
 	}
@@ -57,7 +57,7 @@ func TestAsk_RequestFormat(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewClient(srv.URL)
+	client := NewClient(srv.URL, "")
 	ch := chat.New(client, "deepseek-v3")
 	_, err := ch.Ask("hello world")
 	if err != nil {
@@ -100,7 +100,7 @@ func TestAsk_SuccessResponse(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewClient(srv.URL)
+	client := NewClient(srv.URL, "")
 	ch := chat.New(client, "test-model")
 	resp, err := ch.Ask("prompt")
 	if err != nil {
@@ -118,7 +118,7 @@ func TestAsk_ServerError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewClient(srv.URL)
+	client := NewClient(srv.URL, "")
 	ch := chat.New(client, "test-model")
 	_, err := ch.Ask("prompt")
 
@@ -133,7 +133,7 @@ func TestAsk_InvalidJSON(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewClient(srv.URL)
+	client := NewClient(srv.URL, "")
 	ch := chat.New(client, "test-model")
 	_, err := ch.Ask("prompt")
 
@@ -155,7 +155,7 @@ func TestAsk_EmptyChoices(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewClient(srv.URL)
+	client := NewClient(srv.URL, "")
 	ch := chat.New(client, "test-model")
 	_, err := ch.Ask("prompt")
 
@@ -186,7 +186,7 @@ func TestAsk_NilContent(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewClient(srv.URL)
+	client := NewClient(srv.URL, "")
 	ch := chat.New(client, "test-model")
 	resp, err := ch.Ask("prompt")
 

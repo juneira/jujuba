@@ -12,12 +12,14 @@ import (
 
 type Client struct {
 	baseURL    string
+	apiKey     string
 	httpClient *http.Client
 }
 
-func NewClient(baseURL string) *Client {
+func NewClient(baseURL string, apiKey string) *Client {
 	return &Client{
 		baseURL:    baseURL,
+		apiKey:     apiKey,
 		httpClient: &http.Client{},
 	}
 }
@@ -49,6 +51,9 @@ func (c *Client) Ask(ch *chat.Chat) (*chat.MessageType, error) {
 		return nil, fmt.Errorf("create request: %w", err)
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
+	if c.apiKey != "" {
+		httpReq.Header.Set("Authorization", "Bearer "+c.apiKey)
+	}
 
 	resp, err := c.httpClient.Do(httpReq)
 	if err != nil {
