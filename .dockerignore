@@ -1,0 +1,9 @@
+node_modules
+.git
+.wrangler
+coverage
+workspace
+test/.tmp
+.dev
+.sandboxd
+*.log

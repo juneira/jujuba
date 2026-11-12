@@ -1,0 +1,29 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "jujuba-agent",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-11-09",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "OPENROUTER_MODEL": "deepseek/deepseek-v4.1-flash-1017",
+    "SANDBOX_INSTANCE": "standard-1",
+    "SANDBOX_INTERNET": "true",
+    "SANDBOX_INACTIVITY_MS": "600000"
+  },
+  "containers": [
+    {
+      "class_name": "CodeAgent",
+      "scheduling_policy": "durable_object",
+      "images": {
+        "workspace": {
+          "dockerfile": "./docker/sandbox/Dockerfile"
+        }
+      }
+    }
+  ],
+  "durable_objects": {
+    "bindings": [{ "name": "AGENT", "class_name": "CodeAgent" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["CodeAgent"] }],
+  "observability": { "enabled": true }
+}

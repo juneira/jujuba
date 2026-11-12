@@ -1,0 +1,11 @@
+node_modules/
+.wrangler/
+.dev.vars
+.env
+coverage/
+workspace/
+.dev/
+.sandboxd/
+test/.tmp/
+*.log
+.DS_Store

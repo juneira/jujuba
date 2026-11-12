@@ -1,0 +1,45 @@
+{
+  "name": "jujuba-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "jujuba": "./bin/jujuba.ts"
+  },
+  "scripts": {
+    "dev": "bun run scripts/dev.ts",
+    "start": "bun run bin/jujuba.ts",
+    "build:prod": "bun run bin/jujuba.ts build",
+    "link": "bun link",
+    "worker": "wrangler dev --port 8787",
+    "fix:sidecar": "bun run scripts/fix-local-sidecar.ts",
+    "tui": "bun run src/tui/main.ts",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run && bun test test/tui",
+    "test:unit": "vitest run --project unit",
+    "test:e2e": "vitest run --project e2e",
+    "test:bun": "bun test test/tui",
+    "coverage": "vitest run --coverage && bun test --coverage --coverage-reporter=lcov test/tui && bun run scripts/coverage-gate.ts",
+    "types": "wrangler types src/worker-configuration.d.ts --include-runtime false"
+  },
+  "dependencies": {
+    "@cloudflare/sandbox": "1.0.3",
+    "@opencode/plugin": "2.2.6",
+    "@opencode/sdk": "2.2.6",
+    "@opentui/core": "0.8.3",
+    "agents": "0.33.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "1.6.1",
+    "@cloudflare/workers-types": "5.20261109.1",
+    "@types/node": "^24.10.0",
+    "@vitest/coverage-istanbul": "5.1.0",
+    "bun-types": "1.4.4",
+    "concurrently": "^9.2.1",
+    "typescript": "6.0.3",
+    "vitest": "5.1.0",
+    "wrangler": "4.159.0"
+  }
+}
