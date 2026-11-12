@@ -29,7 +29,7 @@ export class CliError extends Error {
   }
 }
 
-export const USAGE = `jujuba — run the coding agent locally
+export const USAGE = `JUJUBA — run the coding agent locally
 
 Usage:
   jujuba [run] [options]    build if needed, start the worker, open the TUI

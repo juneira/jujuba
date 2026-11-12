@@ -165,7 +165,7 @@ export async function main(options: MainOptions): Promise<number> {
     return 0
   }
   if (parsed.command === "version") {
-    console.log(`jujuba ${version(options.root)}`)
+    console.log(`JUJUBA ${version(options.root)}`)
     return 0
   }
 

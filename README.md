@@ -1,4 +1,4 @@
-# jujuba
+# JUJUBA
 
 A coding agent that runs shell commands and edits files inside a Cloudflare
 Sandbox container, with a terminal UI.
@@ -253,8 +253,11 @@ with `…`), and task lists and reference links are shown as plain text.
 
 The header above the transcript shows the current project (or `root`), the
 session name (its OpenCode title when there is one, otherwise the id), and the
-provider and model the agent is using. The status line below the prompt keeps
-the run state and the last error.
+provider and model the agent is using. On the right, the `JUJUBA` brand is drawn
+in bubblegum pink: the highlighted syllable changes every second while a ball
+blooms from a dot to a full spark, and the cycle starts over with the word. The
+word itself never changes case. The status line below the prompt keeps the run
+state and the last error.
 
 The TUI reopens the last session and mode you used. It records session ids in
 `$XDG_STATE_HOME/jujuba` (default `~/.local/state/jujuba`), one file per

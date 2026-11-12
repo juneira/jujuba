@@ -131,6 +131,7 @@ Cloudflare Container (microVM, own kernel + network)
 | `src/tui/view-model.ts` | Pure reducer: harness events → transcript entries |
 | `src/tui/tool-view.ts` | File diffs and argument previews derived from tool input |
 | `src/tui/transcript.ts` | Pure styled-line view of the transcript |
+| `src/tui/gum.ts` | Pure header animation: JU-JU-BA color steps and the blooming ball |
 | `src/tui/markdown.ts` | Markdown to styled transcript lines (markers concealed) |
 | `src/tui/ansi.ts` | Strips terminal escape sequences from rendered text |
 | `src/tui/render.ts` | OpenTUI renderables (excluded from Vitest coverage) |

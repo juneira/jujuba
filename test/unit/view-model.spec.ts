@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { transcriptText } from "../../src/tui/transcript.js"
 import {
-  headerLine,
+  headerDetails,
   initialState,
   reduce,
   statusLine,
@@ -358,9 +358,9 @@ describe("rendering helpers", () => {
   })
 
   it("shows the project, session, provider and model in the header", () => {
-    expect(headerLine({ status: "idle", entries: [] })).toBe("jujuba · root")
+    expect(headerDetails({ status: "idle", entries: [] })).toEqual(["root"])
     expect(
-      headerLine({
+      headerDetails({
         status: "idle",
         entries: [],
         project: "demo",
@@ -368,12 +368,13 @@ describe("rendering helpers", () => {
         provider: "openrouter",
         model: "deepseek/deepseek-v4.1-flash-1017",
       }),
-    ).toBe("jujuba · demo · ses_root · openrouter · deepseek/deepseek-v4.1-flash-1017")
+    ).toEqual(["demo", "ses_root", "openrouter", "deepseek/deepseek-v4.1-flash-1017"])
   })
 
   it("prefers the session title over its id", () => {
-    expect(headerLine({ status: "idle", entries: [], session: "ses_root", title: "Deploy notes" })).toBe(
-      "jujuba · root · Deploy notes",
-    )
+    expect(headerDetails({ status: "idle", entries: [], session: "ses_root", title: "Deploy notes" })).toEqual([
+      "root",
+      "Deploy notes",
+    ])
   })
 })

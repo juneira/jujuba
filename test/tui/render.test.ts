@@ -18,6 +18,7 @@ const state: TuiState = {
 function tuiOptions(renderer: CliRenderer, overrides: Partial<TuiOptions> = {}): TuiOptions {
   return {
     renderer,
+    now: () => 0,
     onSubmit: () => {},
     onInput: () => {},
     onAbort: () => {},
@@ -36,7 +37,7 @@ describe("OpenTUI renderer", () => {
       tui.render(state)
       await setup.renderOnce()
       const frame = setup.captureCharFrame()
-      expect(frame).toContain("jujuba")
+      expect(frame).toContain("JUJUBA")
       expect(frame).toContain("write hello.txt")
       expect(frame).toContain("done")
       expect(frame).toContain("shell")
@@ -62,9 +63,64 @@ describe("OpenTUI renderer", () => {
       })
       await setup.renderOnce()
       const frame = setup.captureCharFrame()
-      expect(frame).toContain(
-        "jujuba · demo · Deploy notes · openrouter · deepseek/deepseek-v4.1-flash-1017",
-      )
+      expect(frame).toContain("demo · Deploy notes · openrouter · deepseek/deepseek-v4.1-flash-1017")
+      expect(frame).toContain("JUJUBA ✢")
+    } finally {
+      await setup.dispose()
+    }
+  })
+
+  test("animates the brand and grows the gum ball", async () => {
+    const setup = await createTestRenderer({ width: 90, height: 20 })
+    try {
+      let now = 0
+      const tui = await createTui(tuiOptions(setup.renderer, { now: () => now }))
+      const draw = async (): Promise<string> => {
+        tui.render({ status: "idle", project: "demo", entries: [] })
+        await setup.renderOnce()
+        return setup.captureCharFrame()
+      }
+
+      let frame = await draw()
+      expect(frame).toContain("JUJUBA ✢")
+      expect(frame).toContain("demo")
+
+      now = 600
+      frame = await draw()
+      expect(frame).toContain("JUJUBA ✳")
+
+      now = 1800
+      frame = await draw()
+      expect(frame).toContain("JUJUBA ✻")
+      expect(frame).not.toContain("✸")
+
+      now = 2400
+      frame = await draw()
+      expect(frame).toContain("JUJUBA ✽")
+
+      now = 3000
+      frame = await draw()
+      expect(frame).toContain("JUJUBA ✢")
+      expect(frame).not.toContain("jujuba")
+    } finally {
+      await setup.dispose()
+    }
+  })
+
+  test("truncates the identity line so the brand stays on the right", async () => {
+    const setup = await createTestRenderer({ width: 50, height: 12 })
+    try {
+      const tui = await createTui(tuiOptions(setup.renderer))
+      tui.render({
+        status: "idle",
+        project: "demo",
+        session: "ses_root",
+        provider: "openrouter",
+        model: "deepseek/deepseek-v4.1-flash-1017",
+        entries: [],
+      })
+      await setup.renderOnce()
+      expect(setup.captureCharFrame()).toContain("… JUJUBA ✢")
     } finally {
       await setup.dispose()
     }
@@ -89,7 +145,8 @@ describe("OpenTUI renderer", () => {
       })
       await setup.renderOnce()
       const frame = setup.captureCharFrame()
-      expect(frame).toContain("jujuba · demo · ses_root · openrouter · deepseek/deepseek-v4.1-flash-1017")
+      expect(frame).toContain("demo · ses_root · openrouter · deepseek/deepseek-v4.1-flash-1017")
+      expect(frame).toContain("JUJUBA ✢")
       expect(frame).toContain("idle")
       expect(frame).toContain("line 119")
     } finally {
@@ -274,7 +331,8 @@ describe("OpenTUI renderer", () => {
       const tui = await createTui(tuiOptions(setup.renderer, { onPickSession }))
       tui.render({ status: "idle", project: "demo", entries: [] })
       await setup.renderOnce()
-      expect(setup.captureCharFrame()).toContain("jujuba · demo")
+      expect(setup.captureCharFrame()).toContain("JUJUBA ✢")
+      expect(setup.captureCharFrame()).toContain("demo")
 
       tui.showSessions(
         [

@@ -310,13 +310,13 @@ export function reduce(state: TuiState, action: TuiAction): TuiState {
   }
 }
 
-/** Identity line: project, session name, provider and model. */
-export function headerLine(state: TuiState): string {
-  const parts = ["jujuba", state.project ?? "root"]
+/** Identity parts after the brand: project, session name, provider and model. */
+export function headerDetails(state: TuiState): string[] {
+  const parts = [state.project ?? "root"]
   if (state.session !== undefined) parts.push(state.title ?? state.session)
   if (state.provider !== undefined) parts.push(state.provider)
   if (state.model !== undefined) parts.push(state.model)
-  return parts.join(" · ")
+  return parts
 }
 
 export function statusLine(state: TuiState): string {

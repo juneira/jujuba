@@ -16,8 +16,9 @@ import {
 } from "@opentui/core"
 import { displayRemote } from "../projects/registry.js"
 import type { TuiCommandInfo } from "./commands.js"
+import { gumSegments, gumWidth, TICK_FPS, type GumStyle } from "./gum.js"
 import { viewLines, type ViewLine, type ViewSegment, type ViewStyle } from "./transcript.js"
-import { headerLine, statusLine, type TuiState } from "./view-model.js"
+import { headerDetails, statusLine, type TuiState } from "./view-model.js"
 
 export interface SessionChoice {
   readonly id: string
@@ -84,6 +85,28 @@ function styledChunk(segment: ViewSegment): TextChunk {
   }
 }
 
+/** Bubblegum pinks: the brand, the highlighted syllable and the ball. */
+const GUM_COLORS: Record<GumStyle, RGBA> = {
+  brand: RGBA.fromHex("#ff79c6"),
+  active: RGBA.fromHex("#ff2d95"),
+  ball: RGBA.fromHex("#ff8fd0"),
+}
+
+/** One line, clipped with an ellipsis so it never runs into the brand. */
+function fitInfo(text: string, width: number): string {
+  return text.length <= width ? text : `${text.slice(0, Math.max(0, width - 1))}…`
+}
+
+function brandContent(elapsedMs: number): StyledText {
+  const chunks: TextChunk[] = gumSegments(elapsedMs).map((segment) => ({
+    __isChunk: true,
+    text: segment.text,
+    fg: GUM_COLORS[segment.style],
+    ...(segment.style === "active" ? { attributes: TextAttributes.BOLD } : {}),
+  }))
+  return new StyledText(chunks)
+}
+
 function transcriptContent(lines: readonly ViewLine[]): StyledText {
   const chunks: TextChunk[] = []
   lines.forEach((line, index) => {
@@ -101,6 +124,8 @@ interface MenuChoice {
 
 export interface TuiOptions {
   readonly renderer?: CliRenderer
+  /** Clock for the header animation; tests freeze it. */
+  readonly now?: (() => number) | undefined
   readonly onSubmit: (text: string) => void
   readonly onInput: (value: string) => void
   readonly onAbort: () => void
@@ -133,7 +158,18 @@ export async function createTui(options: TuiOptions): Promise<Tui> {
     padding: 1,
     gap: 1,
   })
-  const header = new TextRenderable(renderer, { content: "jujuba · root", wrapMode: "none" })
+  // Details on the left, the brand pushed to the right edge.
+  const header = new BoxRenderable(renderer, {
+    flexDirection: "row",
+    width: "100%",
+    height: 1,
+    justifyContent: "space-between",
+    flexShrink: 0,
+  })
+  const headerInfo = new TextRenderable(renderer, { content: "root", wrapMode: "none", flexShrink: 1 })
+  const headerBrandText = new TextRenderable(renderer, { content: brandContent(0), wrapMode: "none", flexShrink: 0 })
+  header.add(headerInfo)
+  header.add(headerBrandText)
   // ScrollBox draws its own border outside its layout box, which makes a long
   // transcript overflow and push the header and status off screen. Keep the
   // border on a wrapper so the height the flex layout reserves is the height
@@ -188,11 +224,28 @@ export async function createTui(options: TuiOptions): Promise<Tui> {
   renderer.root.add(root)
   input.focus()
 
-  // OpenTUI destroys the renderer on its own exit signals; websocket callbacks
-  // can still fire afterwards, so never touch the scene once it is gone.
+  // OpenTUI destroys the renderer on its own exit signals so the animation
+  // timer and websocket callbacks must never touch the scene afterwards.
   let destroyed = false
+
+  let lastState: TuiState | undefined
+  const now = options.now ?? Date.now
+  const startedAt = now()
+
+  const paintHeader = (): void => {
+    if (destroyed || lastState === undefined) return
+    const elapsed = now() - startedAt
+    // Root padding (1 each side) plus a space before the brand.
+    const room = Math.max(0, renderer.width - 2 - gumWidth(elapsed) - 1)
+    headerInfo.content = fitInfo(headerDetails(lastState).join(" · "), room)
+    headerBrandText.content = brandContent(elapsed)
+  }
+
+  const stopAnimation = renderer.onAnimationTick(TICK_FPS, paintHeader)
+
   renderer.on(CliRenderEvents.DESTROY, () => {
     destroyed = true
+    stopAnimation()
   })
 
   input.on(InputRenderableEvents.INPUT, () => {
@@ -301,7 +354,8 @@ export async function createTui(options: TuiOptions): Promise<Tui> {
       const lines = viewLines(state)
       body.content = lines.length === 0 ? "No messages yet." : transcriptContent(lines)
       status.content = statusLine(state)
-      header.content = headerLine(state)
+      lastState = state
+      paintHeader()
     },
     showSessions(sessions, selectedId, selectedAgent) {
       if (destroyed) return
@@ -363,6 +417,7 @@ export async function createTui(options: TuiOptions): Promise<Tui> {
     destroy() {
       if (destroyed) return
       destroyed = true
+      stopAnimation()
       renderer.destroy()
     },
   }
