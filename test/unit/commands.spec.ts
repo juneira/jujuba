@@ -38,6 +38,24 @@ describe("parseCommand", () => {
     expect(parseCommand("/usr/bin")).toEqual({ type: "unknown", text: "/usr/bin" })
   })
 
+  it("parses a leading dollar as a shell command", () => {
+    expect(parseCommand("$ ls -la")).toEqual({ type: "shell", command: "ls -la" })
+    expect(parseCommand("$   ls")).toEqual({ type: "shell", command: "ls" })
+    expect(parseCommand("  $ echo hi")).toEqual({ type: "shell", command: "echo hi" })
+    expect(parseCommand("$ echo $HOME")).toEqual({ type: "shell", command: "echo $HOME" })
+    expect(parseCommand("$HOME")).toEqual({ type: "shell", command: "HOME" })
+  })
+
+  it("reports usage for an empty shell command", () => {
+    const usage = "usage: $ <command>"
+    expect(parseCommand("$")).toEqual({ type: "usage", message: usage, text: "$" })
+    expect(parseCommand("$   ")).toEqual({ type: "usage", message: usage, text: "$   " })
+  })
+
+  it("keeps a dollar in the middle of a prompt", () => {
+    expect(parseCommand("cost is $5")).toEqual({ type: "prompt", text: "cost is $5" })
+  })
+
   it("treats everything else as a prompt", () => {
     expect(parseCommand("hello")).toEqual({ type: "prompt", text: "hello" })
     expect(parseCommand("what is /new?")).toEqual({ type: "prompt", text: "what is /new?" })

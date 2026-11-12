@@ -1,4 +1,5 @@
 import { normalizeWorkspacePath, WORKSPACE } from "./paths.js"
+import type { ExecResult } from "./types.js"
 
 export const DEFAULT_TIMEOUT_MS = 120_000
 export const MAX_TIMEOUT_MS = 300_000
@@ -25,6 +26,15 @@ export function resolveWorkspaceCwd(cwd: string | undefined): string {
 /** Quotes a value for a POSIX shell command line. */
 export function shellQuote(value: string): string {
   return `'${value.replaceAll("'", `'\\''`)}'`
+}
+
+/** Formats a sandbox command result for a tool or TUI transcript entry. */
+export function formatExec(result: ExecResult): string {
+  const parts = [`exit: ${result.exitCode}`]
+  if (result.stdout.trim() !== "") parts.push(result.stdout.trimEnd())
+  if (result.stderr.trim() !== "") parts.push(`stderr:\n${result.stderr.trimEnd()}`)
+  if (result.truncated) parts.push("[output truncated]")
+  return parts.join("\n")
 }
 
 /**

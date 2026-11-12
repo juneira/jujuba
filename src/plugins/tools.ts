@@ -1,6 +1,9 @@
 import { Plugin } from "@opencode/plugin"
 import type { Sandbox } from "../sandbox/backend.js"
-import type { ExecResult, GlobResult, GrepResult, ListResult, ReadFileResult } from "../sandbox/types.js"
+import { formatExec } from "../sandbox/output.js"
+import type { GlobResult, GrepResult, ListResult, ReadFileResult } from "../sandbox/types.js"
+
+export { formatExec }
 
 /** Built-in OpenCode tools that need a local filesystem or process. */
 export const LOCAL_TOOL_NAMES = ["read", "write", "edit", "patch", "glob", "grep", "shell", "list"] as const
@@ -43,14 +46,6 @@ export function formatList(result: ListResult): string {
   return result.entries
     .map((entry) => (entry.type === "dir" ? `${entry.name}/` : entry.type === "symlink" ? `${entry.name}@` : `${entry.name} (${entry.size} bytes)`))
     .join("\n")
-}
-
-export function formatExec(result: ExecResult): string {
-  const parts = [`exit: ${result.exitCode}`]
-  if (result.stdout.trim() !== "") parts.push(result.stdout.trimEnd())
-  if (result.stderr.trim() !== "") parts.push(`stderr:\n${result.stderr.trimEnd()}`)
-  if (result.truncated) parts.push("[output truncated]")
-  return parts.join("\n")
 }
 
 function stringField(input: Record<string, unknown>, field: string): string {

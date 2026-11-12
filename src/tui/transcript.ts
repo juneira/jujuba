@@ -1,7 +1,7 @@
 import { stripAnsi } from "./ansi.js"
 import { markdownLines } from "./markdown.js"
-import type { DiffLineKind, ToolChange, ToolView } from "./tool-view.js"
-import type { TuiEntry, TuiState } from "./view-model.js"
+import type { DiffLineKind, ToolChange, ToolStatus, ToolView } from "./tool-view.js"
+import type { TuiEntry, ShellView, TuiState } from "./view-model.js"
 
 export type ViewStyle =
   | "user"
@@ -89,14 +89,14 @@ function nameStyle(tool: ToolView): ViewStyle {
   return tool.status === "error" ? "error" : "tool-name"
 }
 
-function statusMarker(tool: ToolView): string {
-  if (tool.status === "error") return "✖"
-  return tool.status === "running" ? "○" : "✔"
+function statusMarker(status: { readonly status: ToolStatus }): string {
+  if (status.status === "error") return "✖"
+  return status.status === "running" ? "○" : "✔"
 }
 
-function statusStyle(tool: ToolView): ViewStyle {
-  if (tool.status === "error") return "error"
-  return tool.status === "running" ? "tool-meta" : "tool-name"
+function statusStyle(status: { readonly status: ToolStatus }): ViewStyle {
+  if (status.status === "error") return "error"
+  return status.status === "running" ? "tool-meta" : "tool-name"
 }
 
 function toolHeader(tool: ToolView): ViewLine {
@@ -127,11 +127,9 @@ function changeLines(change: ToolChange): ViewLine[] {
   return lines
 }
 
-function outputLines(tool: ToolView): ViewLine[] {
-  const output = tool.output
+function outputLinesFor(output: string | undefined, tail: boolean): ViewLine[] {
   if (output === undefined || output === "") return []
   const body = splitBody(stripAnsi(output))
-  const tail = tool.name === "shell"
   const over = body.length > MAX_DISPLAY_OUTPUT_LINES
   const shown = over
     ? tail
@@ -145,6 +143,33 @@ function outputLines(tool: ToolView): ViewLine[] {
     if (tail) lines.unshift(summary)
     else lines.push(summary)
   }
+  return lines
+}
+
+function outputLines(tool: ToolView): ViewLine[] {
+  return outputLinesFor(tool.output, tool.name === "shell")
+}
+
+function shellHeader(shell: ShellView): ViewLine {
+  const style: ViewStyle = shell.status === "error" ? "error" : "tool-name"
+  const segments: ViewSegment[] = [
+    { text: "▌ ", style },
+    { text: "$ ", style: "tool-name" },
+    { text: shell.command, style: "tool-args" },
+  ]
+  segments.push({ text: `  ${statusMarker(shell)}`, style: statusStyle(shell) })
+  return { segments }
+}
+
+function shellLines(entry: TuiEntry): ViewLine[] {
+  const shell = entry.shell
+  if (shell === undefined) {
+    return splitBody(stripAnsi(entry.text)).map((part, index) =>
+      line(`  ${part}`, index === 0 ? "tool-name" : "output"),
+    )
+  }
+  const lines = [shellHeader(shell)]
+  lines.push(...outputLinesFor(shell.output, true))
   return lines
 }
 
@@ -172,6 +197,8 @@ function entryLines(entry: TuiEntry): ViewLine[] {
       return prefixedLines("· ", splitBody(entry.text), "info")
     case "tool":
       return toolLines(entry)
+    case "shell":
+      return shellLines(entry)
     case "assistant":
       return markdownLines(stripAnsi(entry.text))
   }

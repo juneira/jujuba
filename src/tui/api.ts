@@ -1,5 +1,6 @@
 import type { PromptResult, SessionSummary } from "../agent/types.js"
 import type { AllSessionsResult, ProjectSummary, ScopedSessionSummary } from "../projects/types.js"
+import type { ExecResult } from "../sandbox/types.js"
 import type { SessionEvent, SessionSnapshot, TuiStatus } from "./view-model.js"
 
 export interface TuiHandlers {
@@ -134,6 +135,26 @@ export class TuiClient {
     if (!response.ok) throw new Error(body.error ?? "create project failed")
     if (body.project === undefined) throw new Error("create project failed")
     return body.project
+  }
+
+  async exec(
+    command: string,
+    agent: string = this.#agent,
+    options: { cwd?: string; timeoutMs?: number } = {},
+  ): Promise<ExecResult> {
+    const response = await this.#fetch(`${this.#baseUrl}/api/sandbox/exec`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        agent,
+        command,
+        ...(options.cwd === undefined ? {} : { cwd: options.cwd }),
+        ...(options.timeoutMs === undefined ? {} : { timeoutMs: options.timeoutMs }),
+      }),
+    })
+    const body = (await response.json().catch(() => ({}))) as { error?: string } & ExecResult
+    if (!response.ok) throw new Error(body.error ?? "exec failed")
+    return body
   }
 
   connect(handlers: TuiHandlers, session?: string, agent: string = this.#agent): () => void {

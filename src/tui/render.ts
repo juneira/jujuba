@@ -188,7 +188,7 @@ export async function createTui(options: TuiOptions): Promise<Tui> {
   })
   const body = new TextRenderable(renderer, { content: "Connecting…" })
   const input = new InputRenderable(renderer, {
-    placeholder: "Ask the agent…  (/new, /sessions, /projects)",
+    placeholder: "Ask the agent…  ($ shell, /new, /sessions, /projects)",
     width: "100%",
   })
   const status = new TextRenderable(renderer, { content: "connecting" })

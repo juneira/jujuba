@@ -236,3 +236,64 @@ describe("tool entries", () => {
     expect(transcriptText(bare)[0]).toBe("▌ read  ✔")
   })
 })
+
+describe("shell entries", () => {
+  it("renders a running shell command", () => {
+    const state = stateWith({
+      id: "1",
+      kind: "shell",
+      text: "ls -la",
+      shell: { command: "ls -la", status: "running" },
+    })
+    expect(transcriptText(state)).toEqual(["▌ $ ls -la  ○"])
+  })
+
+  it("renders a completed shell command with its output", () => {
+    const state = stateWith({
+      id: "1",
+      kind: "shell",
+      text: "ls -la\nexit: 0\nhi",
+      shell: { command: "ls -la", status: "done", output: "exit: 0\nhi" },
+    })
+    expect(transcriptText(state)).toEqual(["▌ $ ls -la  ✔", "  exit: 0", "  hi"])
+  })
+
+  it("renders a failed shell command with an error marker", () => {
+    const state = stateWith({
+      id: "1",
+      kind: "shell",
+      text: "ls\nexit: 1\nstderr:\nboom",
+      shell: { command: "ls", status: "error", output: "exit: 1\nstderr:\nboom" },
+    })
+    expect(transcriptText(state)).toEqual(["▌ $ ls  ✖", "  exit: 1", "  stderr:", "  boom"])
+  })
+
+  it("keeps the tail of long shell output", () => {
+    const body = Array.from({ length: 20 }, (_, index) => `line ${index}`).join("\n")
+    const state = stateWith({
+      id: "1",
+      kind: "shell",
+      text: `ls\n${body}`,
+      shell: { command: "ls", status: "done", output: body },
+    })
+    const lines = transcriptText(state)
+    expect(lines).toHaveLength(17)
+    expect(lines[1]).toBe("  … 5 more lines")
+    expect(lines.at(-1)).toBe("  line 19")
+  })
+
+  it("strips ANSI escapes from shell output", () => {
+    const state = stateWith({
+      id: "1",
+      kind: "shell",
+      text: "ls",
+      shell: { command: "ls", status: "done", output: "\u001B[32mok\u001B[0m" },
+    })
+    expect(transcriptText(state)).toEqual(["▌ $ ls  ✔", "  ok"])
+  })
+
+  it("falls back when a shell entry has no shell view", () => {
+    const state = stateWith({ id: "1", kind: "shell", text: "ls\nexit: 0" })
+    expect(transcriptText(state)).toEqual(["  ls", "  exit: 0"])
+  })
+})

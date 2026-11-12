@@ -339,6 +339,69 @@ describe("events", () => {
   })
 })
 
+describe("shell actions", () => {
+  it("adds a running shell entry", () => {
+    const state = reduce(base, { type: "shell-start", id: "shell:1", command: "ls -la" })
+    expect(state.entries).toEqual([
+      {
+        id: "shell:1",
+        kind: "shell",
+        text: "ls -la",
+        shell: { command: "ls -la", status: "running" },
+      },
+    ])
+    expect(state.status).toBe("idle")
+  })
+
+  it("updates a shell entry with its result", () => {
+    const started = reduce(base, { type: "shell-start", id: "shell:1", command: "ls -la" })
+    const state = reduce(started, {
+      type: "shell-end",
+      id: "shell:1",
+      result: { exitCode: 0, stdout: "hi\n", stderr: "", truncated: false, durationMs: 1 },
+    })
+    expect(state.entries).toEqual([
+      {
+        id: "shell:1",
+        kind: "shell",
+        text: "ls -la\nexit: 0\nhi",
+        shell: { command: "ls -la", status: "done", output: "exit: 0\nhi" },
+      },
+    ])
+  })
+
+  it("marks a failed shell command as an error", () => {
+    const started = reduce(base, { type: "shell-start", id: "shell:1", command: "ls" })
+    const state = reduce(started, {
+      type: "shell-end",
+      id: "shell:1",
+      result: { exitCode: 1, stdout: "", stderr: "boom\n", truncated: false, durationMs: 1 },
+    })
+    expect(state.entries[0]).toMatchObject({
+      kind: "shell",
+      shell: { command: "ls", status: "error", output: "exit: 1\nstderr:\nboom" },
+    })
+  })
+
+  it("records a shell error", () => {
+    const started = reduce(base, { type: "shell-start", id: "shell:1", command: "ls" })
+    const state = reduce(started, { type: "shell-error", id: "shell:1", message: "boom" })
+    expect(state.entries[0]).toMatchObject({
+      kind: "shell",
+      shell: { command: "ls", status: "error", output: "boom" },
+    })
+  })
+
+  it("creates a shell entry for an unknown id", () => {
+    const state = reduce(base, {
+      type: "shell-end",
+      id: "shell:9",
+      result: { exitCode: 0, stdout: "", stderr: "", truncated: false, durationMs: 0 },
+    })
+    expect(state.entries[0]).toMatchObject({ id: "shell:9", kind: "shell", shell: { status: "done" } })
+  })
+})
+
 describe("rendering helpers", () => {
   it("prefixes transcript entries and indents continuation lines", () => {
     const state: TuiState = {
