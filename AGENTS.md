@@ -125,7 +125,7 @@ Cloudflare Container (microVM, own kernel + network)
 | `src/sandbox/ssh.ts` | SSH key decoding, normalization and install constants |
 | `src/sandbox/types.ts` | Result types and `SandboxError` |
 | `src/tui/api.ts` | HTTP + WebSocket client with reconnect/backoff |
-| `src/tui/commands.ts` | Command registry/matching (`/new_project`, `/projects`, `/root`), top-level session filtering |
+| `src/tui/commands.ts` | Command registry/matching (`/new_project`, `/projects`, `/root`, `$`), top-level session filtering |
 | `src/tui/last-session.ts` | Per-agent "last session" state file |
 | `src/tui/last-project.ts` | Last mode (project or root) state file |
 | `src/tui/view-model.ts` | Pure reducer: harness events → transcript entries |
@@ -159,7 +159,8 @@ Cloudflare Container (microVM, own kernel + network)
 1. The TUI POSTs `/api/prompt` and opens `/api/ws?agent=<name>&session=<id>`.
    The agent is the root agent or the current project’s agent. The session comes
    from the state file, `/new` (`POST /api/sessions/new`) or `/sessions`
-   (`POST /api/sessions`; root mode uses `/api/sessions/all`).
+   (`POST /api/sessions`; root mode uses `/api/sessions/all`). A `$` command
+   bypasses the model and runs through `POST /api/sandbox/exec`.
 2. `handleRequest` validates the agent/session and calls the DO RPC.
 3. A project is its own `CodeAgent`, container and OpenCode store. The root agent
    keeps the project registry in DO storage and aggregates project sessions for
@@ -234,6 +235,11 @@ Cloudflare Container (microVM, own kernel + network)
   `unknown` for anything the registry lacks, and `main.ts` opens the command
   menu (or the matches) instead of prompting. Never let slash text fall through
   to the model.
+- **A leading `$` in the TUI is a shell command.** `parseCommand` returns
+  `shell` for the first `$`; `main.ts` runs it through `POST /api/sandbox/exec`
+  and adds a `shell` transcript entry. It never reaches the model. A bare `$`
+  is usage. Shell entries are local TUI state and do not survive a session
+  switch or a snapshot rebuild.
 - **A saved session id can be stale.** `/api/ws` validates `?session=` against
   `harness.sessions.list()` and falls back to root; the snapshot reports the id
   actually used, so the TUI overwrites the state file instead of reconnecting to

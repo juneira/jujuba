@@ -170,16 +170,18 @@ Set `SANDBOX_LOCAL_FIX_EGRESS=false` to disable the watcher. It only affects loc
 | `/root` | Return to root mode |
 | `/new` | Create a session in the current project, or in root |
 | `/sessions` | Pick a session; root mode lists every project’s sessions |
+| `$ <command>` | Run a shell command in the current agent’s `/workspace` |
 | `Enter` | Send the prompt, or run the command |
 | `Esc` | Close a menu, or abort the running turn |
 | `Ctrl+C` | Exit |
 
-A leading `/` always means a command, never a message. While you type it, the
-matching commands are listed above the prompt: `↑`/`↓` move the highlight and
-`Enter` runs the highlighted command (the first match is highlighted as soon as
-the list appears). Text that matches no command is never sent to the model —
-`Enter` reports the unknown name and shows the full list; `Esc` returns to
-typing.
+A leading `/` always means a command, never a message. A leading `$` always
+means a shell command in the current agent’s `/workspace`; it runs directly and
+never reaches the model. While you type `/`, the matching commands are listed
+above the prompt: `↑`/`↓` move the highlight and `Enter` runs the highlighted
+command (the first match is highlighted as soon as the list appears). Text that
+matches no command is never sent to the model — `Enter` reports the unknown name
+and shows the full list; `Esc` returns to typing.
 
 ### Projects
 
@@ -242,6 +244,14 @@ command appears as ordinary shell output rather than a diff. Long diffs show 30
 lines per file; tool output shows 15 lines (the head for `read`/`grep`/`glob`/
 `list`, the tail for `shell`) and reports how many lines were hidden. ANSI
 escape sequences in command output are stripped before display.
+
+A `$` command gets its own block, and its tail is kept like `shell` output:
+
+```text
+▌ $ git status  ✔
+  exit: 0
+  On branch main
+```
 
 Assistant text is rendered as markdown: headings, bold, italic, strikethrough,
 inline code and links lose their syntax markers and gain a style, blockquotes
@@ -347,6 +357,7 @@ The worker exposes these routes under `/api/sandbox/*` (subject to `AUTH_TOKEN`)
 | `POST /api/sandbox/reset` | `{agent}` | Destroy the container and clear the snapshot |
 | `POST /api/sandbox/read` | `{agent, path, offset?, limit?}` | Read a workspace file |
 | `POST /api/sandbox/write` | `{agent, path, content}` | Write a workspace file |
+| `POST /api/sandbox/exec` | `{agent, command, cwd?, timeoutMs?}` | Run a command in `/workspace` |
 
 Use `save` after work you want to keep. The container's inactivity timeout keeps
 the files between turns, but a stopped container starts from its last snapshot or
