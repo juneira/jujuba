@@ -132,6 +132,16 @@ describe("agent e2e over wrangler dev", () => {
     expect(file.body).toMatchObject({ content: "built" })
   })
 
+  containerIt("runs a command directly in the sandbox", async () => {
+    await resetSandbox("e2e-exec")
+    const result = await post("/api/sandbox/exec", { agent: "e2e-exec", command: "printf direct" })
+    expect(result.status).toBe(200)
+    expect(result.body).toMatchObject({ exitCode: 0, stdout: "direct" })
+
+    const pwd = await post("/api/sandbox/exec", { agent: "e2e-exec", command: "pwd" })
+    expect(pwd.body).toMatchObject({ stdout: "/workspace\n" })
+  })
+
   containerIt("reports, saves and resets the sandbox", async () => {
     await resetSandbox("e2e-sandbox")
     await enqueue([

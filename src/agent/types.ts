@@ -1,6 +1,6 @@
 import type { AllSessionsResult, ProjectSummary } from "../projects/types.js"
 import type { SandboxSnapshot, SandboxStatus } from "../sandbox/backend.js"
-import type { ReadFileResult, WriteFileResult } from "../sandbox/types.js"
+import type { ReadFileResult, ExecResult, WriteFileResult } from "../sandbox/types.js"
 
 export interface PromptResult {
   readonly status: "done" | "unanswered"
@@ -35,5 +35,6 @@ export interface AgentStub {
   sandboxReset(): Promise<void>
   sandboxRead(path: string, offset?: number, limit?: number): Promise<ReadFileResult>
   sandboxWrite(path: string, content: string): Promise<WriteFileResult>
+  sandboxExec(command: string, cwd?: string, timeoutMs?: number): Promise<ExecResult>
   fetch(request: Request): Promise<Response>
 }

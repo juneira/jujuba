@@ -8,6 +8,7 @@ export interface HandlerDeps {
 }
 
 const MAX_PROMPT_CHARS = 100_000
+const MAX_COMMAND_CHARS = 100_000
 
 function json(payload: unknown, status = 200): Response {
   return Response.json(payload, { status })
@@ -154,6 +155,21 @@ export async function handleRequest(request: Request, deps: HandlerDeps): Promis
       const path = stringField(body, "path")
       const content = stringField(body, "content")
       return json(await deps.getAgent(agent).sandboxWrite(path, content))
+    }
+
+    if (url.pathname === "/api/sandbox/exec" && request.method === "POST") {
+      const body = await readJson(request)
+      const agent = parseAgentName(body.agent)
+      const command = stringField(body, "command")
+      if (command.trim() === "") {
+        return error("command is required")
+      }
+      if (command.length > MAX_COMMAND_CHARS) {
+        return error(`command is limited to ${MAX_COMMAND_CHARS} characters`, 413)
+      }
+      const cwd = optionalString(body, "cwd")
+      const timeoutMs = optionalNumber(body, "timeoutMs")
+      return json(await deps.getAgent(agent).sandboxExec(command, cwd, timeoutMs))
     }
 
     if (url.pathname === "/api/ws") {

@@ -22,6 +22,13 @@ function stub(): AgentStub {
     sandboxReset: vi.fn(async () => undefined),
     sandboxRead: vi.fn(async () => ({ path: "/workspace/a", content: "hi", totalLines: 1, truncated: false })),
     sandboxWrite: vi.fn(async () => ({ path: "/workspace/a", bytes: 2 })),
+    sandboxExec: vi.fn(async () => ({
+      exitCode: 0,
+      stdout: "hi",
+      stderr: "",
+      truncated: false,
+      durationMs: 1,
+    })),
     fetch: vi.fn(async () => new Response("socket")),
   }
 }
@@ -301,6 +308,31 @@ describe("sandbox routes", () => {
     expect(agent.sandboxWrite).toHaveBeenCalledWith("/workspace/a", "hi")
   })
 
+  it("runs a shell command", async () => {
+    const { agent, deps } = setup()
+    const response = await handleRequest(
+      request("/api/sandbox/exec", json({ agent: "a", command: "pwd" })),
+      deps,
+    )
+    expect(await response.json()).toEqual({
+      exitCode: 0,
+      stdout: "hi",
+      stderr: "",
+      truncated: false,
+      durationMs: 1,
+    })
+    expect(agent.sandboxExec).toHaveBeenCalledWith("pwd", undefined, undefined)
+  })
+
+  it("passes cwd and timeout to a shell command", async () => {
+    const { agent, deps } = setup()
+    await handleRequest(
+      request("/api/sandbox/exec", json({ agent: "a", command: "pwd", cwd: "/workspace/src", timeoutMs: 5_000 })),
+      deps,
+    )
+    expect(agent.sandboxExec).toHaveBeenCalledWith("pwd", "/workspace/src", 5_000)
+  })
+
   it("validates sandbox inputs", async () => {
     const { agent, deps } = setup()
     await handleRequest(request("/api/sandbox/read", json({ agent: "a", path: "/workspace/a" })), deps)
@@ -314,5 +346,18 @@ describe("sandbox routes", () => {
       (await handleRequest(request("/api/sandbox/write", json({ agent: "a", path: "a" })), deps)).status,
     ).toBe(400)
     expect((await handleRequest(request("/api/sandbox/save", json({ agent: "../a" })), deps)).status).toBe(400)
+    expect((await handleRequest(request("/api/sandbox/exec", json({ agent: "a" })), deps)).status).toBe(400)
+    expect(
+      (await handleRequest(request("/api/sandbox/exec", json({ agent: "a", command: "  " })), deps)).status,
+    ).toBe(400)
+    expect(
+      (await handleRequest(request("/api/sandbox/exec", json({ agent: "a", command: "x".repeat(100_001) })), deps)).status,
+    ).toBe(413)
+    expect(
+      (await handleRequest(request("/api/sandbox/exec", json({ agent: "a", command: "x", cwd: 5 })), deps)).status,
+    ).toBe(400)
+    expect(
+      (await handleRequest(request("/api/sandbox/exec", json({ agent: "a", command: "x", timeoutMs: "x" })), deps)).status,
+    ).toBe(400)
   })
 })

@@ -24,7 +24,7 @@ import { CloudflareSandbox, parseInstance } from "../sandbox/cloudflare.js"
 import type { SandboxSnapshot, SandboxStatus } from "../sandbox/backend.js"
 import { WORKSPACE } from "../sandbox/paths.js"
 import { decodeBase64 } from "../sandbox/ssh.js"
-import type { ReadFileResult, WriteFileResult } from "../sandbox/types.js"
+import type { ReadFileResult, ExecResult, WriteFileResult } from "../sandbox/types.js"
 
 const PROJECTS_KEY = "projects.registry"
 
@@ -254,6 +254,17 @@ export class CodeAgent extends DurableObject<Env> {
 
   async sandboxWrite(path: string, content: string): Promise<WriteFileResult> {
     return this.#sandbox.write(path, content)
+  }
+
+  async sandboxExec(command: string, cwd?: string, timeoutMs?: number): Promise<ExecResult> {
+    const result = await this.#sandbox.exec(command, {
+      ...(cwd === undefined ? {} : { cwd }),
+      ...(timeoutMs === undefined ? {} : { timeoutMs }),
+    })
+    if (result.exitCode === 0 && this.#sandbox.running) {
+      this.ctx.waitUntil(this.#sandbox.save().catch(() => undefined))
+    }
+    return result
   }
 
   override async fetch(request: Request): Promise<Response> {
