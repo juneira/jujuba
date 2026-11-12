@@ -16,22 +16,34 @@ export const COMMANDS: readonly TuiCommandInfo[] = [
 
 const NEW_PROJECT_USAGE = "usage: /new_project <name> [git remote origin]"
 
+/** A leading `$` runs a shell command in the current agent's `/workspace`. */
+export const SHELL_PREFIX = "$"
+export const SHELL_USAGE = "usage: $ <command>"
+
 export type TuiCommand =
   | { readonly type: "new" }
   | { readonly type: "sessions" }
   | { readonly type: "projects" }
   | { readonly type: "root" }
   | { readonly type: "new-project"; readonly name: string; readonly remote?: string }
+  | { readonly type: "shell"; readonly command: string }
   | { readonly type: "usage"; readonly message: string; readonly text: string }
   | { readonly type: "unknown"; readonly text: string }
   | { readonly type: "prompt"; readonly text: string }
 
 /**
- * A leading `/` always means a command, never a message. Anything the registry
- * does not know comes back as `unknown` so the caller can offer the command
- * list instead of sending it to the model.
+ * A leading `/` always means a command, never a message. A leading `$` always
+ * means a shell command in the agent's workspace. Anything the registry does not
+ * know comes back as `unknown` so the caller can offer the command list instead
+ * of sending it to the model.
  */
 export function parseCommand(text: string): TuiCommand {
+  const trimmed = text.trimStart()
+  if (trimmed.startsWith(SHELL_PREFIX)) {
+    const command = trimmed.slice(SHELL_PREFIX.length).trim()
+    if (command === "") return { type: "usage", message: SHELL_USAGE, text }
+    return { type: "shell", command }
+  }
   if (text === "/new") return { type: "new" }
   if (text === "/sessions") return { type: "sessions" }
   if (text === "/projects") return { type: "projects" }

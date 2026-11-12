@@ -33,6 +33,7 @@ let currentSession = store.read()
 let knownProjects: ProjectSummary[] = []
 let stopSocket: (() => void) | undefined
 let socketGeneration = 0
+let shellSequence = 0
 
 const tui = await createTui({
   onSubmit: (text) => {
@@ -99,6 +100,9 @@ function executeCommand(command: TuiCommand): void {
     case "new-project":
       void createProject(command.name, command.remote)
       return
+    case "shell":
+      void runShell(command.command)
+      return
     case "usage":
       dispatch({ type: "error", message: command.message })
       return
@@ -121,6 +125,22 @@ function chooseCommand(text: string): void {
 
 function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
+}
+
+async function runShell(command: string): Promise<void> {
+  const id = `shell:${++shellSequence}`
+  const agent = currentAgent()
+  const session = currentSession
+  dispatch({ type: "shell-start", id, command })
+  try {
+    const result = await client.exec(command, agent)
+    // The user may have switched projects or sessions while the command ran.
+    if (agent !== currentAgent() || session !== currentSession) return
+    dispatch({ type: "shell-end", id, result })
+  } catch (error) {
+    if (agent !== currentAgent() || session !== currentSession) return
+    dispatch({ type: "shell-error", id, message: messageOf(error) })
+  }
 }
 
 function dispatch(action: TuiAction): void {

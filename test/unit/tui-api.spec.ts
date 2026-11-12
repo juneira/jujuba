@@ -272,6 +272,46 @@ describe("TuiClient project routing", () => {
   })
 })
 
+describe("TuiClient exec", () => {
+  it("posts a shell command to the sandbox", async () => {
+    const fetch = vi.fn(async () =>
+      Response.json({ exitCode: 0, stdout: "hi", stderr: "", truncated: false, durationMs: 1 }),
+    )
+    const api = client({ fetch })
+    await expect(api.exec("pwd")).resolves.toEqual({
+      exitCode: 0,
+      stdout: "hi",
+      stderr: "",
+      truncated: false,
+      durationMs: 1,
+    })
+    const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe("http://agent.test/api/sandbox/exec")
+    expect(JSON.parse(String(init.body))).toEqual({ agent: "my agent", command: "pwd" })
+  })
+
+  it("sends the requested agent and optional options", async () => {
+    const fetch = vi.fn(async () =>
+      Response.json({ exitCode: 0, stdout: "", stderr: "", truncated: false, durationMs: 0 }),
+    )
+    const api = client({ fetch })
+    await api.exec("pwd", "project-1", { cwd: "/workspace/src", timeoutMs: 5_000 })
+    expect(JSON.parse(String((fetch.mock.calls[0] as unknown as [string, RequestInit])[1].body))).toEqual({
+      agent: "project-1",
+      command: "pwd",
+      cwd: "/workspace/src",
+      timeoutMs: 5_000,
+    })
+  })
+
+  it("throws the server error for a failed command", async () => {
+    const api = client({ fetch: async () => Response.json({ error: "nope" }, { status: 400 }) })
+    await expect(api.exec("pwd")).rejects.toThrow("nope")
+    const noBody = client({ fetch: async () => new Response("", { status: 500 }) })
+    await expect(noBody.exec("pwd")).rejects.toThrow("exec failed")
+  })
+})
+
 describe("TuiClient socket", () => {
   it("falls back to the global WebSocket", () => {
     const api = new TuiClient({ baseUrl: "http://agent.test", agent: "a" })
