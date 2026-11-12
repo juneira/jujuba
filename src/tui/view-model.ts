@@ -1,14 +1,23 @@
+import { formatExec } from "../sandbox/output.js"
+import type { ExecResult } from "../sandbox/types.js"
 import { toolChanges, toolSummary, type ToolStatus, type ToolView } from "./tool-view.js"
 
 export type TuiStatus = "connecting" | "idle" | "busy" | "error"
 
-export type EntryKind = "user" | "assistant" | "tool" | "error" | "info"
+export type EntryKind = "user" | "assistant" | "tool" | "shell" | "error" | "info"
+
+export interface ShellView {
+  readonly command: string
+  readonly status: ToolStatus
+  readonly output?: string
+}
 
 export interface TuiEntry {
   readonly id: string
   readonly kind: EntryKind
   readonly text: string
   readonly tool?: ToolView
+  readonly shell?: ShellView
 }
 
 export interface TuiState {
@@ -42,6 +51,9 @@ export type TuiAction =
   | { readonly type: "snapshot"; readonly snapshot: SessionSnapshot }
   | { readonly type: "events"; readonly events: readonly SessionEvent[] }
   | { readonly type: "error"; readonly message: string }
+  | { readonly type: "shell-start"; readonly id: string; readonly command: string }
+  | { readonly type: "shell-end"; readonly id: string; readonly result: ExecResult }
+  | { readonly type: "shell-error"; readonly id: string; readonly message: string }
   | { readonly type: "session"; readonly session?: string; readonly project?: string }
   | { readonly type: "clear" }
 
@@ -294,6 +306,48 @@ export function reduce(state: TuiState, action: TuiAction): TuiState {
         error: action.message,
         entries: [...state.entries, { id: `error:${state.entries.length}`, kind: "error", text: action.message }],
       }
+    case "shell-start":
+      return {
+        ...state,
+        entries: upsert(state.entries, {
+          id: action.id,
+          kind: "shell",
+          text: action.command,
+          shell: { command: action.command, status: "running" },
+        }),
+      }
+    case "shell-end": {
+      const previous = state.entries.find((entry) => entry.id === action.id)?.shell
+      const command = previous?.command ?? action.id
+      const output = formatExec(action.result)
+      const failed = action.result.exitCode !== 0
+      return {
+        ...state,
+        entries: upsert(state.entries, {
+          id: action.id,
+          kind: "shell",
+          text: `${command}\n${output}`,
+          shell: {
+            command,
+            status: failed ? "error" : "done",
+            output,
+          },
+        }),
+      }
+    }
+    case "shell-error": {
+      const previous = state.entries.find((entry) => entry.id === action.id)?.shell
+      const command = previous?.command ?? action.id
+      return {
+        ...state,
+        entries: upsert(state.entries, {
+          id: action.id,
+          kind: "shell",
+          text: `${command}\n${action.message}`,
+          shell: { command, status: "error", output: action.message },
+        }),
+      }
+    }
     case "session": {
       // The next snapshot repopulates the transcript for the chosen session.
       const { error: _error, session: _session, project: _project, title: _title, ...rest } = state

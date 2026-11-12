@@ -48,6 +48,30 @@ describe("OpenTUI renderer", () => {
     }
   })
 
+  test("renders a shell command with its output", async () => {
+    const setup = await createTestRenderer({ width: 70, height: 20 })
+    try {
+      const tui = await createTui(tuiOptions(setup.renderer))
+      tui.render({
+        status: "idle",
+        entries: [
+          {
+            id: "shell:1",
+            kind: "shell",
+            text: "git status\nexit: 0\nOn branch main",
+            shell: { command: "git status", status: "done", output: "exit: 0\nOn branch main" },
+          },
+        ],
+      })
+      await setup.renderOnce()
+      const frame = setup.captureCharFrame()
+      expect(frame).toContain("$ git status")
+      expect(frame).toContain("On branch main")
+    } finally {
+      await setup.dispose()
+    }
+  })
+
   test("shows the project, session, provider and model in the header", async () => {
     const setup = await createTestRenderer({ width: 120, height: 20 })
     try {
