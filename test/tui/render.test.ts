@@ -1,8 +1,9 @@
 /// <reference path="../../node_modules/bun-types/test.d.ts" />
 import { describe, expect, mock, test } from "bun:test"
-import type { CliRenderer } from "@opentui/core"
+import { RGBA, type CliRenderer } from "@opentui/core"
 import { createTestRenderer } from "@opentui/core/testing"
 import { createTui, type ProjectChoice, type SessionChoice, type TuiOptions } from "../../src/tui/render.js"
+import { PALETTE } from "../../src/tui/theme.js"
 import type { TuiState } from "../../src/tui/view-model.js"
 
 const state: TuiState = {
@@ -564,5 +565,75 @@ describe("OpenTUI renderer", () => {
     const tui = await createTui(tuiOptions(setup.renderer))
     await setup.dispose()
     expect(() => tui.render(state)).not.toThrow()
+  })
+
+  test("paints the gum pink brand on the blackberry background", async () => {
+    const setup = await createTestRenderer({ width: 60, height: 15 })
+    try {
+      const tui = await createTui(tuiOptions(setup.renderer))
+      tui.render({ status: "idle", project: "demo", entries: [] })
+      await setup.renderOnce()
+      const spans = setup.captureSpans().lines.flatMap((line) => line.spans)
+      const painted = (text: string, fg: string, bg: string): boolean => {
+        const span = spans.find((candidate) => candidate.text === text)
+        return span !== undefined && span.fg.equals(RGBA.fromHex(fg)) && span.bg.equals(RGBA.fromHex(bg))
+      }
+
+      expect(painted("JU", PALETTE.gumActive, PALETTE.background)).toBe(true)
+      expect(painted("JUBA", PALETTE.gumBrand, PALETTE.background)).toBe(true)
+      expect(painted(" ✢", PALETTE.gumBall, PALETTE.background)).toBe(true)
+    } finally {
+      await setup.dispose()
+    }
+  })
+
+  test("paints panels, borders and selected rows from the theme", async () => {
+    const setup = await createTestRenderer({ width: 60, height: 15 })
+    try {
+      const tui = await createTui(tuiOptions(setup.renderer))
+      tui.render({ status: "idle", entries: [] })
+      tui.showSessions([{ id: "ses_root", busy: false }])
+      await setup.renderOnce()
+      const spans = setup.captureSpans().lines.flatMap((line) => line.spans)
+      const span = (text: string) => spans.find((candidate) => candidate.text === text)
+      const has = (text: string, fg: string, bg: string): boolean => {
+        const found = spans.find((candidate) => candidate.text === text)
+        return found !== undefined && found.fg.equals(RGBA.fromHex(fg)) && found.bg.equals(RGBA.fromHex(bg))
+      }
+
+      const title = span("Sessions")
+      expect(title).toBeDefined()
+      expect(title!.fg.equals(RGBA.fromHex(PALETTE.gumBrand))).toBe(true)
+      expect(title!.bg.equals(RGBA.fromHex(PALETTE.panel))).toBe(true)
+      expect(has("▶ ses_root", PALETTE.textOnPink, PALETTE.gumActive)).toBe(true)
+      expect(has("root · ses_root", PALETTE.textOnPink, PALETTE.gumActive)).toBe(true)
+      expect(
+        has("Ask the agent…  ($ shell, /new, /sessions, /projects)", PALETTE.textMuted, PALETTE.panel),
+      ).toBe(true)
+      expect(
+        spans.some(
+          (candidate) => candidate.text.startsWith("┌") && candidate.bg.equals(RGBA.fromHex(PALETTE.panel)),
+        ),
+      ).toBe(true)
+    } finally {
+      await setup.dispose()
+    }
+  })
+
+  test("paints the status line in the error color", async () => {
+    const setup = await createTestRenderer({ width: 60, height: 15 })
+    try {
+      const tui = await createTui(tuiOptions(setup.renderer))
+      tui.render({ status: "idle", error: "boom", entries: [] })
+      await setup.renderOnce()
+      const status = setup
+        .captureSpans()
+        .lines.flatMap((line) => line.spans)
+        .find((span) => span.text.includes("idle") && span.text.includes("boom"))
+      expect(status).toBeDefined()
+      expect(status!.fg.equals(RGBA.fromHex(PALETTE.cherry))).toBe(true)
+    } finally {
+      await setup.dispose()
+    }
   })
 })
