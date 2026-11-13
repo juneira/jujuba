@@ -269,6 +269,10 @@ blooms from a dot to a full spark, and the cycle starts over with the word. The
 word itself never changes case. The status line below the prompt keeps the run
 state and the last error.
 
+Every TUI color is defined in `src/tui/theme.ts`. Replace the `PALETTE` values
+there to re-theme the whole app; the renderables and the brand animation pick up
+the new colors without further changes.
+
 The TUI reopens the last session and mode you used. It records session ids in
 `$XDG_STATE_HOME/jujuba` (default `~/.local/state/jujuba`), one file per
 agent, and the selected project in `last-project-<root-agent>.json`. If the
