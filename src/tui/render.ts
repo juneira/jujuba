@@ -17,6 +17,7 @@ import {
 import { displayRemote } from "../projects/registry.js"
 import type { TuiCommandInfo } from "./commands.js"
 import { gumSegments, gumWidth, TICK_FPS, type GumStyle } from "./gum.js"
+import { GUM_COLORS, PALETTE, VIEW_COLORS } from "./theme.js"
 import { viewLines, type ViewLine, type ViewSegment, type ViewStyle } from "./transcript.js"
 import { headerDetails, statusLine, type TuiState } from "./view-model.js"
 
@@ -34,23 +35,28 @@ export interface ProjectChoice {
   readonly remote?: string
 }
 
-const COLORS: Partial<Record<ViewStyle, RGBA>> = {
-  user: RGBA.fromHex("#61afef"),
-  "tool-name": RGBA.fromHex("#56b6c2"),
-  "file-header": RGBA.fromHex("#c678dd"),
-  "diff-added": RGBA.fromHex("#98c379"),
-  "diff-removed": RGBA.fromHex("#e06c75"),
-  "diff-hunk": RGBA.fromHex("#61afef"),
-  error: RGBA.fromHex("#e06c75"),
-  heading: RGBA.fromHex("#e5c07b"),
-  "inline-code": RGBA.fromHex("#98c379"),
-  link: RGBA.fromHex("#61afef"),
-  quote: RGBA.fromHex("#7f848e"),
-  "list-marker": RGBA.fromHex("#56b6c2"),
-  rule: RGBA.fromHex("#7f848e"),
-  "code-block": RGBA.fromHex("#c8ccd4"),
-  "table-border": RGBA.fromHex("#7f848e"),
+/** Chrome colors, resolved once from the palette in `theme.ts`. */
+const CHROME = {
+  background: RGBA.fromHex(PALETTE.background),
+  panel: RGBA.fromHex(PALETTE.panel),
+  input: RGBA.fromHex(PALETTE.input),
+  border: RGBA.fromHex(PALETTE.border),
+  borderFocus: RGBA.fromHex(PALETTE.borderFocus),
+  text: RGBA.fromHex(PALETTE.text),
+  textMuted: RGBA.fromHex(PALETTE.textMuted),
+  textOnPink: RGBA.fromHex(PALETTE.textOnPink),
+  plum: RGBA.fromHex(PALETTE.plum),
+  cherry: RGBA.fromHex(PALETTE.cherry),
+  gumBrand: RGBA.fromHex(PALETTE.gumBrand),
+  gumActive: RGBA.fromHex(PALETTE.gumActive),
 }
+
+/** The brand is animated, but its three colors never change. */
+const GUM = {
+  brand: RGBA.fromHex(GUM_COLORS.brand),
+  active: RGBA.fromHex(GUM_COLORS.active),
+  ball: RGBA.fromHex(GUM_COLORS.ball),
+} satisfies Record<GumStyle, RGBA>
 
 const ATTRIBUTES: Partial<Record<ViewStyle, number>> = {
   user: TextAttributes.BOLD,
@@ -75,21 +81,14 @@ const ATTRIBUTES: Partial<Record<ViewStyle, number>> = {
 }
 
 function styledChunk(segment: ViewSegment): TextChunk {
-  const color = COLORS[segment.style]
+  const color = VIEW_COLORS[segment.style]
   const attributes = ATTRIBUTES[segment.style]
   return {
     __isChunk: true,
     text: segment.text,
-    ...(color === undefined ? {} : { fg: color }),
+    ...(color === undefined ? {} : { fg: RGBA.fromHex(color) }),
     ...(attributes === undefined ? {} : { attributes }),
   }
-}
-
-/** Bubblegum pinks: the brand, the highlighted syllable and the ball. */
-const GUM_COLORS: Record<GumStyle, RGBA> = {
-  brand: RGBA.fromHex("#ff79c6"),
-  active: RGBA.fromHex("#ff2d95"),
-  ball: RGBA.fromHex("#ff8fd0"),
 }
 
 /** One line, clipped with an ellipsis so it never runs into the brand. */
@@ -101,7 +100,7 @@ function brandContent(elapsedMs: number): StyledText {
   const chunks: TextChunk[] = gumSegments(elapsedMs).map((segment) => ({
     __isChunk: true,
     text: segment.text,
-    fg: GUM_COLORS[segment.style],
+    fg: GUM[segment.style],
     ...(segment.style === "active" ? { attributes: TextAttributes.BOLD } : {}),
   }))
   return new StyledText(chunks)
@@ -149,7 +148,9 @@ export interface Tui {
 }
 
 export async function createTui(options: TuiOptions): Promise<Tui> {
-  const renderer = options.renderer ?? (await createCliRenderer({ exitOnCtrlC: true }))
+  const renderer =
+    options.renderer ?? (await createCliRenderer({ exitOnCtrlC: true, backgroundColor: PALETTE.background }))
+  renderer.setBackgroundColor(PALETTE.background)
 
   const root = new BoxRenderable(renderer, {
     flexDirection: "column",
@@ -157,6 +158,7 @@ export async function createTui(options: TuiOptions): Promise<Tui> {
     height: "100%",
     padding: 1,
     gap: 1,
+    backgroundColor: CHROME.background,
   })
   // Details on the left, the brand pushed to the right edge.
   const header = new BoxRenderable(renderer, {
@@ -166,7 +168,12 @@ export async function createTui(options: TuiOptions): Promise<Tui> {
     justifyContent: "space-between",
     flexShrink: 0,
   })
-  const headerInfo = new TextRenderable(renderer, { content: "root", wrapMode: "none", flexShrink: 1 })
+  const headerInfo = new TextRenderable(renderer, {
+    content: "root",
+    wrapMode: "none",
+    flexShrink: 1,
+    fg: CHROME.textMuted,
+  })
   const headerBrandText = new TextRenderable(renderer, { content: brandContent(0), wrapMode: "none", flexShrink: 0 })
   header.add(headerInfo)
   header.add(headerBrandText)
@@ -179,19 +186,29 @@ export async function createTui(options: TuiOptions): Promise<Tui> {
     flexShrink: 1,
     flexDirection: "column",
     border: true,
+    backgroundColor: CHROME.panel,
+    borderColor: CHROME.border,
   })
   const transcript = new ScrollBoxRenderable(renderer, {
     width: "100%",
     height: "100%",
     stickyScroll: true,
     stickyStart: "bottom",
+    verticalScrollbarOptions: {
+      trackOptions: { backgroundColor: CHROME.panel, foregroundColor: CHROME.plum },
+    },
   })
-  const body = new TextRenderable(renderer, { content: "Connecting…" })
+  const body = new TextRenderable(renderer, { content: "Connecting…", fg: CHROME.text })
   const input = new InputRenderable(renderer, {
     placeholder: "Ask the agent…  ($ shell, /new, /sessions, /projects)",
     width: "100%",
+    backgroundColor: CHROME.panel,
+    textColor: CHROME.text,
+    focusedBackgroundColor: CHROME.input,
+    focusedTextColor: CHROME.text,
+    placeholderColor: CHROME.textMuted,
   })
-  const status = new TextRenderable(renderer, { content: "connecting" })
+  const status = new TextRenderable(renderer, { content: "connecting", fg: CHROME.textMuted })
 
   // Kept out of the tree until `showSessions`, which gives the input back to
   // the picker until a session is chosen or Escape cancels.
@@ -201,6 +218,10 @@ export async function createTui(options: TuiOptions): Promise<Tui> {
     border: true,
     title: "Sessions",
     height: 3,
+    backgroundColor: CHROME.panel,
+    borderColor: CHROME.border,
+    focusedBorderColor: CHROME.borderFocus,
+    titleColor: CHROME.gumBrand,
   })
   const select = new SelectRenderable(renderer, {
     width: "100%",
@@ -208,6 +229,14 @@ export async function createTui(options: TuiOptions): Promise<Tui> {
     options: [],
     showDescription: true,
     wrapSelection: true,
+    backgroundColor: CHROME.panel,
+    textColor: CHROME.text,
+    focusedBackgroundColor: CHROME.panel,
+    focusedTextColor: CHROME.text,
+    selectedBackgroundColor: CHROME.gumActive,
+    selectedTextColor: CHROME.textOnPink,
+    descriptionColor: CHROME.textMuted,
+    selectedDescriptionColor: CHROME.textOnPink,
   })
   let pickerVisible = false
   let menuKind: "sessions" | "commands" | "projects" | undefined
@@ -354,6 +383,7 @@ export async function createTui(options: TuiOptions): Promise<Tui> {
       const lines = viewLines(state)
       body.content = lines.length === 0 ? "No messages yet." : transcriptContent(lines)
       status.content = statusLine(state)
+      status.fg = state.error === undefined ? CHROME.textMuted : CHROME.cherry
       lastState = state
       paintHeader()
     },
