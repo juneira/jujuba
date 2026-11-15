@@ -1,4 +1,4 @@
-# JUJUBA
+# JUJUBA 🍬
 
 <img width="1887" height="960" alt="image" src="https://github.com/user-attachments/assets/dd9d31ab-ecdb-4b57-8eea-cb143a186f03" />
 
